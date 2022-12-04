@@ -1,8 +1,7 @@
 import socket
-import threading
 import os
 
-HOST= "192.168.0.110"
+HOST = input("Type the IP of the server: ")
 PORT = 65432
 FORMAT = "utf-8"
 DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -14,7 +13,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
     def send(msg):
         message = msg.encode(FORMAT)
         client.send(message)
-        #print(client.recv(1024).decode(FORMAT))
 
     while True:
         os.system('cls||clear')
@@ -30,5 +28,3 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
             break
     
     client.close()
-
-    

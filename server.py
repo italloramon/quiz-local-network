@@ -3,7 +3,6 @@ import threading
 import requests
 import json
 import random
-import os
 from Player import *
 
 def get_ip_address():
@@ -17,7 +16,6 @@ def get_question():
     return question
 
 def show_alternatives(question):
-    print(question)
     alternatives = []
     for alternative in question['incorrectAnswers']:
         alternatives.append(alternative)
@@ -47,13 +45,21 @@ PORT = 65432
 ADDR = (HOST, PORT)
 FORMAT = "utf-8"
 DISCONNECT_MESSAGE = "!DISCONNECT"
-PLAYERS = []
 best_score = 0
 
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
     server.bind(ADDR)
+
+    def start():
+        server.listen()
+        print(f"SERVER ACTIVATED ON {HOST}")
+        while True:
+            conn, addr = server.accept()
+            thread = threading.Thread(target=handle_client, args=(conn, addr))
+            thread.start()
+            print(f"ACTIVE CONNECTIONS: {threading.active_count()- 1}")
 
     def handle_client(conn, addr):
         global best_score
@@ -68,20 +74,16 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
         while connected:
             msg = conn.recv(1024).decode(FORMAT)
             if msg:
-                print(f"{addr} -> {msg}")
-
                 msg_list = msg.split()
 
                 if msg[0] == DISCONNECT_MESSAGE:
                     connected = False
                 elif msg_list[0] == "!nick":
                     player = Player(conn, msg_list[1])
-                    PLAYERS.append(player)
                 
-            
             while True:
 
-                if not player.isLife():
+                if not player.isAlive():
                     msg_finish = f"You've lost all of your life, sorry, you cant continue play the best quiz in the world :( Unless... You pay for me. Pix: ramon_veiga@hotmail.com. Thanks mate!\n\n >>> [Please type !DISCONNECT to quit] <<<\n\n"
                     
                     if player.score > best_score:
@@ -91,14 +93,13 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
                         
 
                     conn.send(msg_finish.encode(FORMAT))
-                    #conn.send(DISCONNECT_MESSAGE.encode(FORMAT))
                     break
+
                 question = get_question()
                 alternatives = show_alternatives(question[0])
                 question_str = f"{question[0]['question']}\n"
-                #conn.send(f"{question[0]['question']}\n".encode(FORMAT))
+                
                 for i in range(4):
-                    #conn.send(f"({i+1}) - {alternatives[i]}\n".encode(FORMAT))
                     question_str += f"({i+1}) - {alternatives[i]}\n"
                 conn.send(question_str.encode(FORMAT))
                 
@@ -111,20 +112,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
                     player.life_down()
                     msg_wrong = f"Sorry {player.name},  you answer was wrong, you lost -1 life!\nYour total of lifes is: >>    {player.life}    <<\nType [ENTER] to continue.\n"
                     conn.send(msg_wrong.encode(FORMAT))
-
-
-            #conn.send("MESSAGE RECEIVED".encode(FORMAT))
         
         conn.close()
 
-    def start():
-        server.listen()
-        print(f"SERVER ACTIVATED ON {HOST}")
-        while True:
-            conn, addr = server.accept()
-            thread = threading.Thread(target=handle_client, args=(conn, addr))
-            thread.start()
-            print(f"ACTIVE CONNECTIONS: {threading.active_count()- 1}")
-
-    print("STARTING THE F*CK SERVER, LES GOOOO!!")
+    print("STARTING THE SERVER . . .")
     start()

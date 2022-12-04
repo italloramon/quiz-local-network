@@ -11,7 +11,7 @@ class Player:
     def score_up(self):
         self.score += 1
 
-    def isLife(self):
+    def isAlive(self):
         if self.life > 0:
             return True
         else:
